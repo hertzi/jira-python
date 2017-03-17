@@ -96,11 +96,19 @@ def print_story(issue_string, with_tasks):
                     time_in_status = stati[story_status]
                 print_issue(task.key, time_in_status)
         # print("-----------------------------------")
+    elif str(issue_type) == 'Task':
+        stati = status_times(story.key)
+        story_status = story.fields.status.name.replace(" ", "")
+        time_in_status = ""
+        if story_status in stati:
+            time_in_status = stati[story_status]
+        print_issue(story.key, time_in_status)
+
 
 search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints()'
 # search_string = 'project in (TCAPP) and Sprint in openSprints()'
 
-issues = audibene.search_issues(search_string)
+issues = audibene.search_issues(search_string, 0, 200)
 
 print "'", search_string, "' [", len(issues), " issues]: "
 for issue in issues:
