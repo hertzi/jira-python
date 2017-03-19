@@ -38,15 +38,20 @@ def status_times(issue_string):
     return time_in_status
 
 
-def print_issue(issue_string, time_in_status):
+def prepare_print_issue(issue_string, file1):
     jira_issue = jira.issue(issue_string)
-
+    time_in_status = ""
+    issue_status = jira_issue.fields.status.name.replace(" ", "")
+    if issue_status != "Done":
+        stati = status_times(jira_issue.key)
+        if issue_status in stati:
+            time_in_status = stati[issue_status]
     list = []
     list.append(issue_string)
     issue_type = jira_issue.fields.issuetype
     list.append(issue_type)
     story_points = ""
-    issue_assignee = ""
+    issue_assignee = None
     if hasattr(jira_issue.fields, 'assignee'):
         issue_assignee = jira_issue.fields.assignee
     if str(issue_type) == 'Story':
@@ -62,7 +67,10 @@ def print_issue(issue_string, time_in_status):
         list.append("\""+str(time_in_status)+"\"")
     else:
         list.append("")
-    print ','.join(map(str, list))
+    if file1 is not None:
+        print >> file1, ','.join(map(str, list))
+    else:
+        print ','.join(map(str, list))
 
 
 def get_active_sprint_from_issue(issue_string):
@@ -72,36 +80,17 @@ def get_active_sprint_from_issue(issue_string):
         print sprint
 
 
-def print_story(issue_string, with_tasks):
+def print_story(issue_string, with_tasks, file1 = None):
     story = jira.issue(issue_string)
     issue_type = story.fields.issuetype
     if str(issue_type) == 'Story':
-        time_in_status = ""
-        story_status = story.fields.status.name.replace(" ", "")
-        if story_status != "Done":
-            stati = status_times(story.key)
-            if story_status in stati:
-                time_in_status = stati[story_status]
-        print_issue(story.key, time_in_status)
+        prepare_print_issue(issue_string, file1)
         if with_tasks:
             tasks = story.fields.subtasks
             for task_string in tasks:
-                task = jira.issue(task_string)
-                time_in_status = ""
-                story_status = task.fields.status.name.replace(" ", "")
-                if story_status != "Done":
-                    stati = status_times(task.key)
-                    if story_status in stati:
-                        time_in_status = stati[story_status]
-                print_issue(task.key, time_in_status)
+                prepare_print_issue(task_string, file1)
     elif str(issue_type) == 'Task':
-        story_status = story.fields.status.name.replace(" ", "")
-        time_in_status = ""
-        if story_status != "Done":
-            stati = status_times(story.key)
-            if story_status in stati:
-                time_in_status = stati[story_status]
-        print_issue(story.key, time_in_status)
+        prepare_print_issue(issue_string, file1)
 
 
 search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints() AND issuetype in (Story, Task)'
@@ -110,6 +99,7 @@ search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints() AND
 issues = jira.search_issues(search_string, 0, 200)
 
 print "'", search_string, "' [", len(issues), " issues]: "
+file1 = open('./sprint.csv', 'w+')
 for issue in issues:
-    print_story(issue.key, True)
+    print_story(issue.key, True, file1)
 
