@@ -5,16 +5,14 @@ import os
 jira_base = os.getenv('JIRA_BASE_URL')
 jira_username = os.getenv('JIRA_USERNAME')
 jira_password = os.getenv('JIRA_PASSWORD')
-audibene = JIRA(jira_base, basic_auth=(jira_username, jira_password))
+jira = JIRA(jira_base, basic_auth=(jira_username, jira_password))
 
 
 def status_times(issue_string):
-    issue_with_log = audibene.issue(issue_string, expand='changelog')
+    issue_with_log = jira.issue(issue_string, expand='changelog')
     issue_status = issue_with_log.fields.status.name.replace(" ", "")
     last_created = 0
     time_in_status = {}
-    if issue_status == 'Done':
-        return {}
     for history in issue_with_log.changelog.histories:
         for item in history.items:
             if item.field == 'status':
@@ -41,7 +39,8 @@ def status_times(issue_string):
 
 
 def print_issue(issue_string, time_in_status):
-    jira_issue = audibene.issue(issue_string)
+    jira_issue = jira.issue(issue_string)
+
     list = []
     list.append(issue_string)
     issue_type = jira_issue.fields.issuetype
@@ -67,48 +66,48 @@ def print_issue(issue_string, time_in_status):
 
 
 def get_active_sprint_from_issue(issue_string):
-    jira_issue = audibene.issue(issue_string)
+    jira_issue = jira.issue(issue_string)
     sprints = jira_issue.fields.customfield_10006
     for sprint in sprints:
         print sprint
 
 
 def print_story(issue_string, with_tasks):
-    story = audibene.issue(issue_string)
+    story = jira.issue(issue_string)
     issue_type = story.fields.issuetype
     if str(issue_type) == 'Story':
-        stati = status_times(story.key)
-        story_status = story.fields.status.name.replace(" ", "")
         time_in_status = ""
-        if story_status in stati:
-            time_in_status = stati[story_status]
+        story_status = story.fields.status.name.replace(" ", "")
+        if story_status != "Done":
+            stati = status_times(story.key)
+            if story_status in stati:
+                time_in_status = stati[story_status]
         print_issue(story.key, time_in_status)
-        # for status in stati:
-        #     print "\t", status, str(stati[status])
         if with_tasks:
             tasks = story.fields.subtasks
             for task_string in tasks:
-                task = audibene.issue(task_string)
-                stati = status_times(task.key)
-                story_status = task.fields.status.name.replace(" ", "")
+                task = jira.issue(task_string)
                 time_in_status = ""
-                if story_status in stati:
-                    time_in_status = stati[story_status]
+                story_status = task.fields.status.name.replace(" ", "")
+                if story_status != "Done":
+                    stati = status_times(task.key)
+                    if story_status in stati:
+                        time_in_status = stati[story_status]
                 print_issue(task.key, time_in_status)
-        # print("-----------------------------------")
     elif str(issue_type) == 'Task':
-        stati = status_times(story.key)
         story_status = story.fields.status.name.replace(" ", "")
         time_in_status = ""
-        if story_status in stati:
-            time_in_status = stati[story_status]
+        if story_status != "Done":
+            stati = status_times(story.key)
+            if story_status in stati:
+                time_in_status = stati[story_status]
         print_issue(story.key, time_in_status)
 
 
-search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints()'
+search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints() AND issuetype in (Story, Task)'
 # search_string = 'project in (TCAPP) and Sprint in openSprints()'
 
-issues = audibene.search_issues(search_string, 0, 200)
+issues = jira.search_issues(search_string, 0, 200)
 
 print "'", search_string, "' [", len(issues), " issues]: "
 for issue in issues:
