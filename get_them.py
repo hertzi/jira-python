@@ -93,8 +93,8 @@ def print_story(issue_string, with_tasks, file1 = None):
         prepare_print_issue(issue_string, file1)
 
 
-search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints() AND issuetype in (Story, Task)'
-# search_string = 'project in (TCAPP) and Sprint in openSprints()'
+# search_string = 'project in (TCHCP, TCBE, TCADP) AND Sprint in openSprints() AND issuetype in (Story, Task)'
+search_string = 'project in (TCAPP) and Sprint in openSprints() AND issuetype in (Story, Task)'
 
 issues = jira.search_issues(search_string, 0, 200)
 
